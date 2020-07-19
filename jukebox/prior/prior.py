@@ -231,13 +231,7 @@ class SimplePrior(nn.Module):
             x_out = self.decoder(zs, start_level=start_level, end_level=end_level, bs_chunks=bs_chunks)
         return x_out
 
-    def get_cond(self, z_conds, y, alpha=0.5):
-        if len(y) == 2:
-            y = y[0]
-            another_y = y[1]
-        else:
-            y = y[0]
-            another_y = None
+    def get_cond(self, z_conds, y, another_y=None, alpha=0.5):
 
         if y is not None:
             assert y.shape[1] == 4 + self.y_emb.max_bow_genre_size + self.n_tokens, f"Expected {4} + {self.y_emb.max_bow_genre_size} + {self.n_tokens}, got {y.shape[1]}"
@@ -259,11 +253,11 @@ class SimplePrior(nn.Module):
         x_cond = self.x_emb(z_conds) if self.x_cond else y_pos
         return x_cond, y_cond, prime
 
-    def sample(self, n_samples, z=None, z_conds=None, y=None, fp16=False, temp=1.0, top_k=0, top_p=0.0,
+    def sample(self, n_samples, z=None, z_conds=None, y1=None, y2=None, fp16=False, temp=1.0, top_k=0, top_p=0.0,
                chunk_size=None, sample_tokens=None):
         N = n_samples
         if z is not None: assert z.shape[0] == N, f"Expected shape ({N},**), got shape {z.shape}"
-        if y is not None: assert y.shape[0] == N, f"Expected shape ({N},**), got shape {y.shape}"
+        if y1 is not None: assert y1.shape[0] == N, f"Expected shape ({N},**), got shape {y.shape}"
         if z_conds is not None:
             for z_cond in z_conds:
                 assert z_cond.shape[0] == N,  f"Expected shape ({N},**), got shape {z_cond.shape}"
@@ -275,7 +269,7 @@ class SimplePrior(nn.Module):
 
         with t.no_grad():
             # Currently x_cond only uses immediately above layer
-            x_cond, y_cond, prime = self.get_cond(z_conds, y)
+            x_cond, y_cond, prime = self.get_cond(z_conds, y1, y2)
             if self.single_enc_dec:
                 # assert chunk_size % self.prime_loss_dims == 0. TODO: Check if needed
                 if no_past_context:

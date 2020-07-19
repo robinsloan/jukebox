@@ -14,7 +14,7 @@ from jukebox.utils.dist_utils import print_once
 import fire
 
 # Sample a partial window of length<n_ctx with tokens_to_sample new tokens on level=level
-def sample_partial_window(zs, labels, sampling_kwargs, level, prior, tokens_to_sample, hps):
+def sample_partial_window(zs, labels_1, labels_2, sampling_kwargs, level, prior, tokens_to_sample, hps):
     z = zs[level]
     n_ctx = prior.n_ctx
     current_tokens = z.shape[1]
@@ -25,7 +25,7 @@ def sample_partial_window(zs, labels, sampling_kwargs, level, prior, tokens_to_s
         sampling_kwargs['sample_tokens'] = n_ctx
         start = current_tokens - n_ctx + tokens_to_sample
 
-    return sample_single_window(zs, labels, sampling_kwargs, level, prior, start, hps)
+    return sample_single_window(zs, labels_1, labels_2, sampling_kwargs, level, prior, start, hps)
 
 # Sample a single window of length=n_ctx at position=start on level=level
 def sample_single_window(zs, labels_1, labels_2, sampling_kwargs, level, prior, start, hps):
@@ -53,20 +53,21 @@ def sample_single_window(zs, labels_1, labels_2, sampling_kwargs, level, prior, 
     z_conds = prior.get_z_conds(zs, start, end)
 
     # set y offset, sample_length and lyrics tokens
-    y = [prior.get_y(labels_1, start), prior.get_y(labels_2, start)]
+    y1 = prior.get_y(labels_1, start)
+    y2 = prior.get_y(labels_2, start)
 
     empty_cache()
 
     max_batch_size = sampling_kwargs['max_batch_size']
     del sampling_kwargs['max_batch_size']
 
-
     z_list = split_batch(z, n_samples, max_batch_size)
     z_conds_list = split_batch(z_conds, n_samples, max_batch_size)
-    y_list = split_batch(y, n_samples, max_batch_size)
+    y1_list = split_batch(y1, n_samples, max_batch_size)
+    y2_list = split_batch(y2, n_samples, max_batch_size)
     z_samples = []
-    for z_i, z_conds_i, y_i in zip(z_list, z_conds_list, y_list):
-        z_samples_i = prior.sample(n_samples=z_i.shape[0], z=z_i, z_conds=z_conds_i, y=y_i, **sampling_kwargs)
+    for z_i, z_conds_i, y1_i, y2_i in zip(z_list, z_conds_list, y1_list, y2_list):
+        z_samples_i = prior.sample(n_samples=z_i.shape[0], z=z_i, z_conds=z_conds_i, y1=y1_i, y2=y2_i, **sampling_kwargs)
         z_samples.append(z_samples_i)
     z = t.cat(z_samples, dim=0)
 
@@ -78,7 +79,7 @@ def sample_single_window(zs, labels_1, labels_2, sampling_kwargs, level, prior, 
     return zs
 
 # Sample total_length tokens at level=level with hop_length=hop_length
-def sample_level(zs, labels_1, label_2, sampling_kwargs, level, prior, total_length, hop_length, hps):
+def sample_level(zs, labels_1, labels_2, sampling_kwargs, level, prior, total_length, hop_length, hps):
     print_once(f"Sampling level {level}")
     if total_length >= prior.n_ctx:
         for start in get_starts(total_length, prior.n_ctx, hop_length):
@@ -121,16 +122,16 @@ def _sample(zs, labels_1, labels_2, sampling_kwargs, priors, sample_levels, hps)
     return zs
 
 # Generate ancestral samples given a list of artists and genres
-def ancestral_sample(labels, sampling_kwargs, priors, hps):
+def ancestral_sample(labels_1, labels_2, sampling_kwargs, priors, hps):
     sample_levels = list(range(len(priors)))
     zs = [t.zeros(hps.n_samples,0,dtype=t.long, device='cuda') for _ in range(len(priors))]
-    zs = _sample(zs, labels, sampling_kwargs, priors, sample_levels, hps)
+    zs = _sample(zs, labels_1, labels_2, sampling_kwargs, priors, sample_levels, hps)
     return zs
 
 # Continue ancestral sampling from previously saved codes
-def continue_sample(zs, labels, sampling_kwargs, priors, hps):
+def continue_sample(zs, labels_1, labels_2, sampling_kwargs, priors, hps):
     sample_levels = list(range(len(priors)))
-    zs = _sample(zs, labels, sampling_kwargs, priors, sample_levels, hps)
+    zs = _sample(zs, labels_1, labels_2, sampling_kwargs, priors, sample_levels, hps)
     return zs
 
 # Upsample given already generated upper-level codes
@@ -266,7 +267,7 @@ def save_samples(model, device, hps, sample_hps):
         raise ValueError(f'Unknown sample mode {sample_hps.mode}.')
 
 
-def run(model, mode='ancestral', codes_file=None, audio_file=None, prompt_length_in_seconds=None, port=29500, **kwargs):
+def run(model, mode='ancestral', codes_file=None, audio_file=None, prompt_length_in_seconds=None, port=29505, **kwargs):
     from jukebox.utils.dist_utils import setup_dist_from_mpi
     rank, local_rank, device = setup_dist_from_mpi(port=port)
     hps = Hyperparams(**kwargs)
