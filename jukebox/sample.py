@@ -114,11 +114,11 @@ def _sample(zs, labels_1, labels_2, sampling_kwargs, priors, sample_levels, hps)
             logdir = f"{hps.name}/level_{level}"
         if not os.path.exists(logdir):
             os.makedirs(logdir)
-        t.save(dict(zs=zs, labels=labels, sampling_kwargs=sampling_kwargs, x=x), f"{logdir}/data.pth.tar")
+        t.save(dict(zs=zs, labels=labels_1, sampling_kwargs=sampling_kwargs, x=x), f"{logdir}/data.pth.tar")
         save_wav(logdir, x, hps.sr)
         if alignments is None and priors[-1] is not None and priors[-1].n_tokens > 0 and not isinstance(priors[-1].labeller, EmptyLabeller):
-            alignments = get_alignment(x, zs, labels[-1], priors[-1], sampling_kwargs[-1]['fp16'], hps)
-        save_html(logdir, x, zs, labels[-1], alignments, hps)
+            alignments = get_alignment(x, zs, labels_1[-1], priors[-1], sampling_kwargs[-1]['fp16'], hps)
+        save_html(logdir, x, zs, labels_1[-1], alignments, hps)
     return zs
 
 # Generate ancestral samples given a list of artists and genres
@@ -135,16 +135,16 @@ def continue_sample(zs, labels_1, labels_2, sampling_kwargs, priors, hps):
     return zs
 
 # Upsample given already generated upper-level codes
-def upsample(zs, labels, sampling_kwargs, priors, hps):
+def upsample(zs, labels_1, labels_2, sampling_kwargs, priors, hps):
     sample_levels = list(range(len(priors) - 1))
-    zs = _sample(zs, labels, sampling_kwargs, priors, sample_levels, hps)
+    zs = _sample(zs, labels_1, labels_2, sampling_kwargs, priors, sample_levels, hps)
     return zs
 
 # Prompt the model with raw audio input (dimension: NTC) and generate continuations
-def primed_sample(x, labels, sampling_kwargs, priors, hps):
+def primed_sample(x, labels_1, labels_2, sampling_kwargs, priors, hps):
     sample_levels = list(range(len(priors)))
     zs = priors[-1].encode(x, start_level=0, end_level=len(priors), bs_chunks=x.shape[0])
-    zs = _sample(zs, labels, sampling_kwargs, priors, sample_levels, hps)
+    zs = _sample(zs, labels_1, labels_2, sampling_kwargs, priors, sample_levels, hps)
     return zs
 
 # Load `duration` seconds of the given audio files to use as prompts
