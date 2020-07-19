@@ -28,7 +28,7 @@ def sample_partial_window(zs, labels, sampling_kwargs, level, prior, tokens_to_s
     return sample_single_window(zs, labels, sampling_kwargs, level, prior, start, hps)
 
 # Sample a single window of length=n_ctx at position=start on level=level
-def sample_single_window(zs, labels, sampling_kwargs, level, prior, start, hps):
+def sample_single_window(zs, labels_1, labels_2, sampling_kwargs, level, prior, start, hps):
     n_samples = hps.n_samples
     n_ctx = prior.n_ctx
     end = start + n_ctx
@@ -48,12 +48,12 @@ def sample_single_window(zs, labels, sampling_kwargs, level, prior, start, hps):
     if new_tokens <= 0:
         # Nothing new to sample
         return zs
-    
+
     # get z_conds from level above
     z_conds = prior.get_z_conds(zs, start, end)
 
     # set y offset, sample_length and lyrics tokens
-    y = prior.get_y(labels, start)
+    y = [prior.get_y(labels_1, start), prior.get_y(labels_2, start)]
 
     empty_cache()
 
@@ -78,17 +78,17 @@ def sample_single_window(zs, labels, sampling_kwargs, level, prior, start, hps):
     return zs
 
 # Sample total_length tokens at level=level with hop_length=hop_length
-def sample_level(zs, labels, sampling_kwargs, level, prior, total_length, hop_length, hps):
+def sample_level(zs, labels_1, label_2, sampling_kwargs, level, prior, total_length, hop_length, hps):
     print_once(f"Sampling level {level}")
     if total_length >= prior.n_ctx:
         for start in get_starts(total_length, prior.n_ctx, hop_length):
-            zs = sample_single_window(zs, labels, sampling_kwargs, level, prior, start, hps)
+            zs = sample_single_window(zs, labels_1, labels_2, sampling_kwargs, level, prior, start, hps)
     else:
-        zs = sample_partial_window(zs, labels, sampling_kwargs, level, prior, total_length, hps)
+        zs = sample_partial_window(zs, labels_1, labels_2, sampling_kwargs, level, prior, total_length, hps)
     return zs
 
 # Sample multiple levels
-def _sample(zs, labels, sampling_kwargs, priors, sample_levels, hps):
+def _sample(zs, labels_1, labels_2, sampling_kwargs, priors, sample_levels, hps):
     alignments = None
     for level in reversed(sample_levels):
         prior = priors[level]
@@ -99,7 +99,7 @@ def _sample(zs, labels, sampling_kwargs, priors, sample_levels, hps):
         assert hps.sample_length % prior.raw_to_tokens == 0, f"Expected sample_length {hps.sample_length} to be multiple of {prior.raw_to_tokens}"
         total_length = hps.sample_length//prior.raw_to_tokens
         hop_length = int(hps.hop_fraction[level]*prior.n_ctx)
-        zs = sample_level(zs, labels[level], sampling_kwargs[level], level, prior, total_length, hop_length, hps)
+        zs = sample_level(zs, labels_1[level], labels_2[level], sampling_kwargs[level], level, prior, total_length, hop_length, hps)
 
         prior.cpu()
         empty_cache()

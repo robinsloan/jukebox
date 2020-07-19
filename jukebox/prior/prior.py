@@ -14,14 +14,14 @@ from jukebox.vqvae.vqvae import calculate_strides
 
 
 """
-Model the prior on vq codes conditioned on timing, artist, genre, lyrics and codes from levels above. 
+Model the prior on vq codes conditioned on timing, artist, genre, lyrics and codes from levels above.
 To condition on the timing, genre and artist, we use the LabelConditioner class
 To condition on the codes from the level above, we use the Conditioner class
 To condition on lyrics, we allow two types of priors:
-- Separate Encoder Decoder: This is the usual encoder-decoder style transformer. The encoder transformer autoregressively 
+- Separate Encoder Decoder: This is the usual encoder-decoder style transformer. The encoder transformer autoregressively
 models the lyrics, and we use its last layer to produce keys/values that are attened to by the decoder transformer
-- Single Encoder Decoder: This is a simplification where we combine them into a single model. We merge the text vocab 
-and VQ vocab into a single large vocab, and the lyric tokens and VQ tokens into a single longer sequence of tokens which 
+- Single Encoder Decoder: This is a simplification where we combine them into a single model. We merge the text vocab
+and VQ vocab into a single large vocab, and the lyric tokens and VQ tokens into a single longer sequence of tokens which
 we autoregressively model together.
 """
 class SimplePrior(nn.Module):
@@ -231,14 +231,31 @@ class SimplePrior(nn.Module):
             x_out = self.decoder(zs, start_level=start_level, end_level=end_level, bs_chunks=bs_chunks)
         return x_out
 
-    def get_cond(self, z_conds, y):
+    def get_cond(self, z_conds, y, alpha=0.5):
+        if len(y) == 2:
+            y = y[0]
+            another_y = y[1]
+        else:
+            y = y[0]
+            another_y = None
+
         if y is not None:
             assert y.shape[1] == 4 + self.y_emb.max_bow_genre_size + self.n_tokens, f"Expected {4} + {self.y_emb.max_bow_genre_size} + {self.n_tokens}, got {y.shape[1]}"
             n_labels = y.shape[1] - self.n_tokens
             y, prime = y[:,:n_labels], y[:,n_labels:]
         else:
             y, prime = None, None
+
         y_cond, y_pos = self.y_emb(y) if self.y_cond else (None, None)
+
+        # https://github.com/openai/jukebox/issues/17
+
+        if self.y_cond and another_y is not None:
+            assert y.shape[0] == another_y.shape[0], "Label batch size is different."
+            n_labels = another_y.shape[1] - self.n_tokens
+            another_y = another_y[:, :n_labels]
+            another_y_cond, _ = self.y_emb(another_y)
+            y_cond = y_cond * alpha + another_y_cond * (1.0 - alpha)
         x_cond = self.x_emb(z_conds) if self.x_cond else y_pos
         return x_cond, y_cond, prime
 
