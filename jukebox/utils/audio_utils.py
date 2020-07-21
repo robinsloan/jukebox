@@ -145,6 +145,6 @@ def save_wav(fname, aud, sr):
     aud = t.clamp(aud, -1, 1).cpu().numpy()
     for i in list(range(aud.shape[0])):
         r = random.randint(0,1000)
-        soundfile.write(f'{fname}/{r}_item_{i}}.wav', aud[i], samplerate=sr, format='wav')
+        soundfile.write(f'{fname}/{r}_item_{i}.wav', aud[i], samplerate=sr, format='wav')
 
 
