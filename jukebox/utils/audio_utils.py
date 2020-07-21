@@ -3,6 +3,7 @@ import torch as t
 import jukebox.utils.dist_adapter as dist
 import soundfile
 import librosa
+import random
 from jukebox.utils.dist_utils import print_once
 
 class DefaultSTFTValues:
@@ -143,6 +144,7 @@ def save_wav(fname, aud, sr):
     # clip before saving?
     aud = t.clamp(aud, -1, 1).cpu().numpy()
     for i in list(range(aud.shape[0])):
-        soundfile.write(f'{fname}/item_{i}.wav', aud[i], samplerate=sr, format='wav')
+        r = random.randint(0,1000)
+        soundfile.write(f'{fname}/{r}_item_{i}}.wav', aud[i], samplerate=sr, format='wav')
 
 
