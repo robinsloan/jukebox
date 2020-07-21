@@ -118,7 +118,8 @@ def _sample(zs, labels_1, labels_2, sampling_kwargs, priors, sample_levels, hps)
         save_wav(logdir, x, hps.sr)
         if alignments is None and priors[-1] is not None and priors[-1].n_tokens > 0 and not isinstance(priors[-1].labeller, EmptyLabeller):
             alignments = get_alignment(x, zs, labels_1[-1], priors[-1], sampling_kwargs[-1]['fp16'], hps)
-        save_html(logdir, x, zs, labels_1[-1], alignments, hps)
+        # don't care
+        # save_html(logdir, x, zs, labels_1[-1], alignments, hps)
     return zs
 
 # Generate ancestral samples given a list of artists and genres
