@@ -23,7 +23,7 @@ hps.n_samples = 3 if model=='5b_lyrics' else 16
 # Specifies the directory to save the sample in.
 # We set this to the Google Drive mount point.
 
-this_run_slug = "co_compose_1"
+this_run_slug = "co_compose_synth2"
 
 hps.name = '/home/robin/google-drive/samples/' + this_run_slug + '/'
 
@@ -41,7 +41,14 @@ vqvae = make_vqvae(setup_hparams(vqvae, dict(sample_length = hps.sample_length))
 metas_1 = meta[0]
 metas_2 = meta[1]
 
+print(metas_1)
+print(metas_2)
+
 zs = t.load(f'{hps.name}zs-top-level-final.t')
+
+top_prior_raw_to_tokens = 128
+
+hps.sample_length = zs[2].shape[1] * top_prior_raw_to_tokens
 
 upsamplers = [make_prior(setup_hparams(prior, dict()), vqvae, 'cpu') for prior in priors[:-1]]
 
@@ -58,4 +65,9 @@ sampling_kwargs = [dict(temp=0.985, fp16=True, max_batch_size=16, chunk_size=32)
 
 top_prior = None
 
+print(labels_1)
+print(labels_2)
+
 zs = upsample(zs, labels_1, labels_2, sampling_kwargs, [*upsamplers, top_prior], hps)
+
+print(f'DONE with ${this_run_slug}')
