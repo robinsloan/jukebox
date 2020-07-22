@@ -44,7 +44,7 @@ def sample_single_window(zs, labels_1, labels_2, sampling_kwargs, level, prior, 
     conditioning_tokens, new_tokens = z.shape[1], sample_tokens - z.shape[1]
 
     print_once(f"Sampling {sample_tokens} tokens for [{start},{start+sample_tokens}]. Conditioning on {conditioning_tokens} tokens")
-    print_once(f"{round( (start+sample_tokens)/total_length*100.0} )%-ish, level {level}")
+    print_once(f"{round( (start+sample_tokens)/total_length*100.0 )}%-ish, level {level}")
     if new_tokens <= 0:
         # Nothing new to sample
         return zs
