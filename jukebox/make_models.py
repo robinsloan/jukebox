@@ -26,13 +26,20 @@ def load_checkpoint(path):
     if restore[:5] == 'gs://':
         gs_path = restore
         local_path = os.path.join(os.path.expanduser("~/.cache"), gs_path[5:])
+        gdrive_path = os.path.join("/content/gdrive/My Drive/samples/models/", gs_path[5:])
         if dist.get_rank() % 8 == 0:
-            print("Downloading from gce")
-            if not os.path.exists(os.path.dirname(local_path)):
-                os.makedirs(os.path.dirname(local_path))
-            if not os.path.exists(local_path):
-                download(gs_path, local_path)
-        restore = local_path
+            if os.path.exists(gdrive_path):
+                restore = gdrive_path
+            elif os.path.exists( os.path.dirname(gdrive_path) ):
+                download(gs_path, gdrive_path)
+                restore = gdrive_path
+            else:
+                print("Downloading from gce")
+                if not os.path.exists(os.path.dirname(local_path)):
+                    os.makedirs(os.path.dirname(local_path))
+                if not os.path.exists(local_path):
+                    download(gs_path, local_path)
+                restore = local_path
     dist.barrier()
     checkpoint = t.load(restore, map_location=t.device('cpu'))
     print("Restored from {}".format(restore))
