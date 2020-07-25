@@ -22,15 +22,20 @@ MODELS = {
 }
 
 def load_checkpoint(path):
+    print("Loading checkpoint...")
     restore = path
     if restore[:5] == 'gs://':
         gs_path = restore
         local_path = os.path.join(os.path.expanduser("~/.cache"), gs_path[5:])
         gdrive_path = os.path.join("/content/gdrive/My Drive/samples/models/", gs_path[5:])
+        print(f'local path: {local_path}')
+        print(f'gdrive path: {gdrive_path}')
         if dist.get_rank() % 8 == 0:
             if os.path.exists(gdrive_path):
+                print("Using priors on Google Drive")
                 restore = gdrive_path
             elif os.path.exists( os.path.dirname(gdrive_path) ):
+                print("Downloading priors to Google Drive")
                 download(gs_path, gdrive_path)
                 restore = gdrive_path
             else:
@@ -42,7 +47,7 @@ def load_checkpoint(path):
                 restore = local_path
     dist.barrier()
     checkpoint = t.load(restore, map_location=t.device('cpu'))
-    print("Restored from {}".format(restore))
+    print("RS // Restored from {}".format(restore))
     return checkpoint
 
 def save_checkpoint(logger, name, model, opt, metrics, hps):
