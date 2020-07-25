@@ -27,7 +27,7 @@ def load_checkpoint(path):
     if restore[:5] == 'gs://':
         gs_path = restore
         local_path = os.path.join(os.path.expanduser("~/.cache"), gs_path[5:])
-        gdrive_path = os.path.join("/content/gdrive/My Drive/samples/models/", gs_path[5:])
+        gdrive_path = os.path.join("/content/gdrive/My Drive/samples/", gs_path[5:])
         print(f'local path: {local_path}')
         print(f'gdrive path: {gdrive_path}')
         if dist.get_rank() % 8 == 0:
