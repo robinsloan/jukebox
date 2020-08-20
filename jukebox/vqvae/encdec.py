@@ -44,7 +44,7 @@ class DecoderConvBock(nn.Module):
                 blocks.append(block)
 
         # RS EDIT
-        self.model = nn.Sequential(*blocks)to('cuda:1')
+        self.model = nn.Sequential(*blocks).to('cuda:1')
 
     def forward(self, x):
         return self.model(x)
