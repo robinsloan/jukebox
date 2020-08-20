@@ -21,8 +21,7 @@ class EncoderConvBlock(nn.Module):
             block = nn.Conv1d(width, output_emb_width, 3, 1, 1)
             blocks.append(block)
 
-        # RS EDIT
-        self.model = nn.Sequential(*blocks).to('cuda:0')
+        self.model = nn.Sequential(*blocks)
 
     def forward(self, x):
         return self.model(x)
@@ -43,8 +42,7 @@ class DecoderConvBock(nn.Module):
                 )
                 blocks.append(block)
 
-        # RS EDIT
-        self.model = nn.Sequential(*blocks).to('cuda:1')
+        self.model = nn.Sequential(*blocks)
 
     def forward(self, x):
         return self.model(x)
