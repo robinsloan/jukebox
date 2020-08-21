@@ -189,8 +189,8 @@ def make_prior(hps, vqvae, device='cuda'):
         prior.apply(_convert_conv_weights_to_fp16)
 
     # RS EDIT
-    # prior = prior.to(device)
-    prior = prior.to("cuda:1")
+    prior = prior.to(device)
+    # prior = prior.to("cuda:1")
 
     restore_model(hps, prior, hps.restore_prior)
     if hps.train:

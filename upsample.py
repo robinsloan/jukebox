@@ -2,6 +2,7 @@ import jukebox
 import torch as t
 import librosa
 import os
+import sys
 import pickle
 import random
 from IPython.display import Audio
@@ -23,7 +24,10 @@ hps.n_samples = 3 if model=='5b_lyrics' else 16
 # Specifies the directory to save the sample in.
 # We set this to the Google Drive mount point.
 
-this_run_slug = "co_compose_synth2"
+if len(sys.argv) > 1:
+  this_run_slug = sys.argv[1]
+else:
+  this_run_slug = "co_compose_synth2"
 
 hps.name = '/home/robin/google-drive/samples/' + this_run_slug + '/'
 
