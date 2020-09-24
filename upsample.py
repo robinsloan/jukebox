@@ -29,6 +29,11 @@ if len(sys.argv) > 1:
 else:
   this_run_slug = "co_compose_synth2"
 
+if len(sys.argv) > 2:
+  this_zs_filename = sys.argv[2]
+else:
+  this_zs_filename = "zs-top-level-final.t"
+
 hps.name = '/home/robin/google-drive/samples/' + this_run_slug + '/'
 
 meta = pickle.load( open( f'{hps.name}meta.p', "rb" ) )
@@ -48,7 +53,7 @@ metas_2 = meta[1]
 print(metas_1)
 print(metas_2)
 
-zs = t.load(f'{hps.name}zs-top-level-final.t')
+zs = t.load(f'{hps.name}{this_zs_filename}')
 
 top_prior_raw_to_tokens = 128
 
